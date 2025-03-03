@@ -1,0 +1,87 @@
+services:
+    nginx:
+        image: nginx:alpine
+        container_name: ${APP_NAME}_nginx
+        ports:
+            - ${APP_PORT_HTTPS:-443}:443
+            - ${APP_PORT_HTTP:-80}:80
+        volumes:
+            - .:/var/www/html
+            - ./docker/development/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+        depends_on:
+            - app
+        restart: always
+        networks:
+            - webAppNetworks
+
+    app:
+        build:
+            context: .
+            dockerfile: ./docker/development/php/8.3/Dockerfile
+        container_name: ${APP_NAME}_app
+        volumes:
+            - app-volume:/var/www/html
+            - .:/var/www/html
+            - ./docker/development/php/8.3/php.ini:/usr/local/etc/php/conf.d/php.ini
+        environment:
+            DB_HOST: db-pgsql
+            DB_PORT: ${DB_PORT:-5432}
+            DB_DATABASE: ${DB_DATABASE:-db}
+            DB_USERNAME: ${DB_USERNAME:-root}
+            DB_PASSWORD: ${DB_PASSWORD:-secret}
+        restart: always
+        networks:
+            - webAppNetworks
+
+    db-pgsql:
+        image: postgres:17
+        ports:
+            - ${DB_PORT:-5432}:5432
+        container_name: ${APP_NAME}_pgsql
+        volumes:
+            - db-mysql-volume:/var/lib/postgresql/data
+        environment:
+            PGPASSWORD: ${DB_PASSWORD:-secret}
+            POSTGRES_DB: ${DB_DATABASE:-db}
+            POSTGRES_USER: ${DB_USERNAME:-root}
+            POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+        healthcheck:
+            test: "pg_isready -q -d ${DB_DATABASE:-db} -U ${DB_USERNAME:-root}"
+            retries: 3
+            timeout: 5s
+        depends_on:
+            - app
+        restart: always
+        networks:
+            - webAppNetworks
+
+    supervisor:
+        build:
+            context: .
+            dockerfile: ./docker/development/supervisor/Dockerfile
+        container_name: ${APP_NAME}_supervisor
+        volumes:
+            - .:/var/www/html
+            - ./docker/development/supervisor/supervisord.conf:/etc/supervisord.conf
+        environment:
+            DB_HOST: db-pgsql
+            DB_PORT: ${DB_PORT:-5432}
+            DB_DATABASE: ${DB_DATABASE:-db}
+            DB_USERNAME: ${DB_USERNAME:-root}
+            DB_PASSWORD: ${DB_PASSWORD:-secret}
+        depends_on:
+            - app
+            - db-pgsql
+        restart: always
+        networks:
+            - webAppNetworks
+
+volumes:
+    db-mysql-volume:
+        driver: local
+    app-volume:
+        driver: local
+
+networks:
+    webAppNetworks:
+        driver: bridge
