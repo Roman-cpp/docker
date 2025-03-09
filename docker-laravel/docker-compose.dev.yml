@@ -18,7 +18,11 @@ services:
         build:
             context: .
             dockerfile: ./docker/development/php/8.3/Dockerfile
+            args:
+                WWWUSER: ${WWWUSER}
+                WWWGROUP: ${WWWGROUP}
         container_name: ${APP_NAME}_app
+        user: app-user
         volumes:
             - app-volume:/var/www/html
             - .:/var/www/html

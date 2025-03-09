@@ -19,10 +19,6 @@ services:
             context: .
             dockerfile: ./docker/production/php/8.3/Dockerfile
         container_name: ${APP_NAME}_app
-        # volumes:
-        #     - app-volume:/var/www/html
-        #     - .:/var/www/html
-        #     - ./docker/production/php/8.3/php.ini:/usr/local/etc/php/conf.d/php.ini
         environment:
             DB_HOST: db-pgsql
             DB_PORT: ${DB_PORT:-5432}
@@ -60,9 +56,6 @@ services:
             context: .
             dockerfile: ./docker/production/supervisor/Dockerfile
         container_name: ${APP_NAME}_supervisor
-        # volumes:
-        #     - .:/var/www/html
-        #     - ./docker/production/supervisor/supervisord.conf:/etc/supervisord.conf
         environment:
             DB_HOST: db-pgsql
             DB_PORT: ${DB_PORT:-5432}
@@ -79,8 +72,6 @@ services:
 volumes:
     db-mysql-volume:
         driver: local
-    # app-volume:
-    #     driver: local
 
 networks:
     webAppNetworks:

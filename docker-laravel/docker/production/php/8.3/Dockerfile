@@ -40,6 +40,10 @@ COPY ./docker/production/php/8.3/php.ini /usr/local/etc/php/conf.d/php.ini
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+RUN npm install
+
+RUN npm run prod
+
 RUN composer install --no-dev --optimize-autoloader
 
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache

@@ -2,6 +2,9 @@ FROM php:8.3-fpm
 
 ARG NODE_VERSION=18
 
+ARG WWWUSER
+ARG WWWGROUP
+
 WORKDIR /var/www/html
 
 RUN apt-get update && apt-get install -y \
@@ -23,6 +26,13 @@ RUN apt-get update && apt-get install -y \
 
 RUN docker-php-ext-install pdo_pgsql mbstring exif pcntl bcmath gd
 
+#start settings user
+
+RUN groupadd -g $WWWGROUP app-user && \
+    useradd -u $WWWUSER -g $WWWGROUP -m app-user
+
+#end settings user
+
 # start node
 RUN curl -fsSL https://deb.nodesource.com/setup_$NODE_VERSION.x | bash - && \
     apt-get install -y nodejs
@@ -31,19 +41,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_$NODE_VERSION.x | bash - && \
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # start composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # end composer
-
-RUN groupadd --force -g 1000 www-data
-
-# COPY . /var/www/html
-
-# RUN composer install
-# COPY --chown=www:www . /var/www
-
-# RUN chown -R 775 /var/www/html
-# RUN chmod -R 775 /var/www/html
 
 EXPOSE 9000
 
